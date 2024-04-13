@@ -181,7 +181,39 @@ class NewsController {
     }
   }
 
-  static async deleteNews(req, res) {}
+  static async deleteNews(req, res) {
+    try {
+      const { id } = req.params
+      const news = await prisma.news.findUnique({
+        where: {
+          id: Number(id),
+        },
+      })
+
+      if (req.user.id !== news?.user_id) {
+        return res.status(401).json({ message: "Unauthorized" })
+      }
+
+      // delete image from filesystem
+      removeImage(news.image)
+
+      await prisma.news.delete({
+        where: {
+          id: Number(id),
+        },
+      })
+
+      res.json({
+        message: "News deleted successfully",
+      })
+    } catch (error) {
+      return res.status(500).json({
+        errors: {
+          message: error,
+        },
+      })
+    }
+  }
 }
 
 export default NewsController
