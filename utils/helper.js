@@ -1,3 +1,4 @@
+import fs from "fs"
 import { supportedMimes } from "../config/fileSystem.js"
 
 export const imageValidator = (size, mime) => {
@@ -20,4 +21,24 @@ export const generateUniqueName = (name) => {
 
 export const getImageUrl = (imageName) => {
   return `${process.env.APP_URL}/images/${imageName}`
+}
+
+export const removeImage = (imageName) => {
+  const path = process.cwd + "/public/images/" + imageName
+  if (fs.existsSync(path)) {
+    fs.unlinkSync(path)
+  }
+}
+
+export const uploadImage = (image) => {
+  const imgExt = image?.name.split(".")
+
+  const imageName = generateUniqueName(imgExt[0]) + "." + imgExt[1]
+  const uploadPath = process.cwd() + "/public/images/" + imageName
+
+  image.mv(uploadPath, (err) => {
+    if (err) throw err
+  })
+
+  return imageName
 }

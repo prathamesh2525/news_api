@@ -1,6 +1,11 @@
 import vine, { errors } from "@vinejs/vine"
 import { newSchema } from "../validations/newsValidation.js"
-import { generateUniqueName, imageValidator } from "../utils/helper.js"
+import {
+  generateUniqueName,
+  imageValidator,
+  removeImage,
+  uploadImage,
+} from "../utils/helper.js"
 import prisma from "../db/db.config.js"
 import NewsApiTransform from "../transform/newsApiTransform.js"
 
@@ -70,14 +75,7 @@ class NewsController {
         })
       }
 
-      const imgExt = image?.name.split(".")
-
-      const imageName = generateUniqueName(imgExt[0]) + "." + imgExt[1]
-      const uploadPath = process.cwd() + "/public/images/" + imageName
-
-      image.mv(uploadPath, (err) => {
-        if (err) throw err
-      })
+      const imageName = uploadImage(image)
 
       payload.image = imageName
       payload.user_id = user.id
@@ -98,9 +96,90 @@ class NewsController {
     }
   }
 
-  static async getNews(req, res) {}
+  static async getNews(req, res) {
+    try {
+      const { id } = req.params
+      const news = await prisma.news.findUnique({
+        where: {
+          id: Number(id),
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              profile: true,
+            },
+          },
+        },
+      })
+      return res.json({
+        news: news ? NewsApiTransform.transform(news) : null,
+      })
+    } catch (error) {
+      return res.status(500).json({
+        message: "something went wrong while fetching news",
+      })
+    }
+  }
 
-  static async updateNews(req, res) {}
+  static async updateNews(req, res) {
+    try {
+      const { id } = req.params
+      const user = req.user
+
+      const news = await prisma.news.findUnique({
+        where: {
+          id: Number(id),
+        },
+      })
+
+      if (user.id !== news.user_id) {
+        return res.status(500).json({
+          message: "Unauthorized user",
+        })
+      }
+
+      const validator = vine.compile(newSchema)
+      const payload = validator.validate(req.body)
+
+      const image = req?.files?.image // if user wants to update image
+      let imageName
+
+      if (image) {
+        const message = imageValidator(image?.size, image?.mimetype)
+        if (message !== null) {
+          0
+          return res.status(400).json({
+            errors: {
+              image: message,
+            },
+          })
+        }
+
+        // upload new image
+        imageName = uploadImage(image)
+        payload.image = imageName
+
+        // delete old image
+        removeImage(news.image)
+      }
+      await prisma.news.update({
+        where: {
+          id: Number(id),
+        },
+        data: payload,
+      })
+
+      return res.status(200).json({ message: "news updated successfully" })
+    } catch (error) {
+      res.status(400).json({
+        errors: {
+          message: error,
+        },
+      })
+    }
+  }
 
   static async deleteNews(req, res) {}
 }
