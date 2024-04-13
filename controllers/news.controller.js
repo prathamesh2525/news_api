@@ -8,11 +8,12 @@ import {
 } from "../utils/helper.js"
 import prisma from "../db/db.config.js"
 import NewsApiTransform from "../transform/newsApiTransform.js"
+import redisCache from "../db/redis.config.js"
 
 class NewsController {
   static async index(req, res) {
     const page = Number(req.query.page) || 1
-    const limit = Number(req.query.limit) || 1
+    const limit = Number(req.query.limit) || 10
 
     if (page <= 0) {
       page = 1
@@ -81,6 +82,10 @@ class NewsController {
       payload.user_id = user.id
 
       const news = await prisma.news.create({ data: payload })
+
+      redisCache.del("/api/news", (err) => {
+        if (err) throw new err()
+      })
 
       return res
         .status(200)
