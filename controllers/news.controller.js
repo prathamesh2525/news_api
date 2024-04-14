@@ -9,6 +9,7 @@ import {
 import prisma from "../db/db.config.js"
 import NewsApiTransform from "../transform/newsApiTransform.js"
 import redisCache from "../db/redis.config.js"
+import logger from "../config/logger.js"
 
 class NewsController {
   static async index(req, res) {
@@ -91,6 +92,7 @@ class NewsController {
         .status(200)
         .json({ message: "News created successfully", news })
     } catch (error) {
+      logger.error(error?.message)
       if (error instanceof errors.E_VALIDATION_ERROR) {
         return res.status(400).json({ errors: error.message, error })
       } else {

@@ -3,6 +3,8 @@ import prisma from "../db/db.config.js"
 import bcrypt from "bcrypt"
 import jwt from "jsonwebtoken"
 import { loginSchema, registerSchema } from "../validations/authValidation.js"
+import { sendEmail } from "../config/mailer.js"
+import logger from "../config/logger.js"
 
 class AuthController {
   static async register(req, res) {
@@ -88,6 +90,26 @@ class AuthController {
           message: "Something went wrong, while creating the new user.",
         })
       }
+    }
+  }
+
+  // send test email
+  static async sendTestEmail(req, res) {
+    try {
+      const { email } = req.query
+      const payload = {
+        toEmail: email,
+        subject: "Testing nodemailer and brevo",
+        body: "<h1>Testin email using nodemailer and brevo...</h1>",
+      }
+
+      await sendEmail(payload.toEmail, payload.subject, payload.body)
+      return res.status(200).json({ message: "mail send successfully." })
+    } catch (error) {
+      logger.error({ type: "Email Error", body: error })
+      return res.status(500).json({
+        message: "something went wrong",
+      })
     }
   }
 }

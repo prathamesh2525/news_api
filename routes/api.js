@@ -16,6 +16,8 @@ router.post("/auth/login", AuthController.login)
 router.get("/profile", authMiddleware, ProfileController.getUser)
 router.put("/update", authMiddleware, ProfileController.updateUser)
 
+router.get("/send-email", AuthController.sendTestEmail)
+
 // news routes
 
 router.get("/news", redisCache.route(), NewsController.index)

@@ -23,6 +23,7 @@ app.get("/", (req, res) => {
 
 import ApiRoutes from "./routes/api.js"
 import { limiter } from "./config/rateLimiter.js"
+import logger from "./config/logger.js"
 app.use("/api/v1", ApiRoutes)
 
 app.listen(PORT, () => {
